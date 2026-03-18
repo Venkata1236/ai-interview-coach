@@ -1,8 +1,5 @@
-langchain==0.1.16
-langchain-community==0.0.34
-langchain-core==0.1.46
-langchain-openai==0.1.6
-openai==1.23.6
+langchain==0.0.350
+openai==0.28.1
 python-dotenv
 streamlit
 pypdf2
