@@ -57,6 +57,9 @@ def initialize_session():
     if "interview_started" not in st.session_state:
         st.session_state.interview_started = False
 
+    # Add this inside initialize_session()
+    if "awaiting_next_question" not in st.session_state:
+        st.session_state.awaiting_next_question = False
 
 def save_candidate_profile(
     candidate_name,
@@ -119,7 +122,8 @@ def reset_session():
         "session_complete",
         "question_count",
         "total_questions",
-        "interview_started"
+        "interview_started",
+        "awaiting_next_question"
     ]
 
     for key in keys_to_clear:

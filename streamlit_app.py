@@ -233,7 +233,6 @@ if not st.session_state.onboarding_complete:
 # ─────────────────────────────────────────
 # MAIN AREA — CHAT INTERFACE
 # ─────────────────────────────────────────
-
 else:
 
     st.title(f"🎯 Interview Session — {st.session_state.target_role}")
@@ -246,14 +245,10 @@ else:
     # --- Display Chat History ---
     for message in st.session_state.chat_history:
         if message["role"] == "assistant":
-            # Hide [FEEDBACK COMPLETE] marker from display
             display_message = message["message"].replace(
                 "[FEEDBACK COMPLETE] Type 'next' or click Next Question when you are ready to continue.",
                 ""
-            ).replace(
-                "[SESSION ENDED]",
-                ""
-            ).strip()
+            ).replace("[SESSION ENDED]", "").strip()
             with st.chat_message("assistant", avatar="🤖"):
                 st.markdown(display_message)
         else:
@@ -270,6 +265,7 @@ else:
         with col2:
             if st.button("✅ Yes, I'm Ready — Start Interview!", use_container_width=True):
                 st.session_state.interview_started = True
+                st.session_state.awaiting_next_question = False
                 with st.spinner("🤖 Coach is preparing your first question..."):
                     response, error = run_chain(
                         st.session_state.chain,
@@ -279,11 +275,9 @@ else:
                     st.error(error)
                 else:
                     add_message_to_history("assistant", response)
-                    if "Question" in response and "?" in response:
-                        increment_question_count()
+                    increment_question_count()
                     st.rerun()
 
-    # --- Interview is active ---
     elif is_session_ready() and st.session_state.get("interview_started", False):
 
         last_message = (
@@ -291,23 +285,18 @@ else:
             if st.session_state.chat_history else ""
         )
 
-        # --- Show session complete only AFTER last answer is evaluated ---
-        # Complete = question_count >= total AND last message has FEEDBACK COMPLETE
+        # --- Session truly complete ---
         session_truly_complete = (
             st.session_state.question_count >= st.session_state.total_questions and
-            "[FEEDBACK COMPLETE]" in last_message
+            st.session_state.get("awaiting_next_question", False)
         )
 
         if session_truly_complete:
-            # --- Session Complete ---
-            st.success(
-                "🎉 Interview session complete! "
-                "Click below to get your full session report."
-            )
+            st.success("🎉 Interview complete! Click below for your full report.")
             col1, col2, col3 = st.columns([1, 2, 1])
             with col2:
                 if st.button("📊 Get My Session Summary", use_container_width=True):
-                    with st.spinner("🤖 Coach is preparing your report..."):
+                    with st.spinner("🤖 Preparing your report..."):
                         response, error = run_chain(
                             st.session_state.chain,
                             "Give me my full session summary with scores and action items."
@@ -316,65 +305,60 @@ else:
                         st.error(error)
                     else:
                         add_message_to_history("assistant", response)
+                        st.session_state.awaiting_next_question = False
                         st.rerun()
 
-        elif "[FEEDBACK COMPLETE]" in last_message:
-            # --- Feedback given, waiting for next question ---
+        elif st.session_state.get("awaiting_next_question", False):
+            # --- Feedback just given — show Next Question button ---
             st.info("📝 Take your time to read the feedback above.")
             col1, col2, col3 = st.columns([1, 2, 1])
             with col2:
                 if st.button("➡️ Next Question", use_container_width=True):
-                    with st.spinner("🤖 Coach is preparing next question..."):
+                    st.session_state.awaiting_next_question = False
+                    with st.spinner("🤖 Preparing next question..."):
                         response, error = run_chain(
                             st.session_state.chain,
-                            "next"
+                            "Please ask me the next interview question now."
                         )
                     if error:
                         st.error(error)
                     else:
                         add_message_to_history("assistant", response)
-                        if "Question" in response and "?" in response:
-                            increment_question_count()
+                        increment_question_count()
                         st.rerun()
 
-        else:
-    # --- Check if session has fully ended ---
-            last_message = (
-                st.session_state.chat_history[-1]["message"]
-                if st.session_state.chat_history else ""
+        elif "[SESSION ENDED]" in last_message:
+            # --- Full end ---
+            st.balloons()
+            st.success(
+                "✅ Session complete! "
+                "Click 'Start New Session' in the sidebar to practice again."
             )
 
-            if "[SESSION ENDED]" in last_message:
-                # Clean ending — no more input
-                st.balloons()
-                st.success(
-                    "✅ Session complete! "
-                    "Click 'Start New Session' in the sidebar to practice again."
-                )
-            else:
-                # --- Normal chat input for answering questions ---
-                user_input = st.chat_input("Type your answer here...")
+        else:
+            # --- Normal answer input ---
+            user_input = st.chat_input("Type your answer here...")
 
-                if user_input:
-                    with st.chat_message("user", avatar="👤"):
-                        st.markdown(user_input)
-                    add_message_to_history("user", user_input)
+            if user_input:
+                with st.chat_message("user", avatar="👤"):
+                    st.markdown(user_input)
+                add_message_to_history("user", user_input)
 
-                    with st.chat_message("assistant", avatar="🤖"):
-                        with st.spinner("🤖 Coach is thinking..."):
-                            response, error = run_chain(
-                                st.session_state.chain,
-                                user_input
-                            )
-                        if error:
-                            st.error(error)
-                        else:
-                            display_response = response.replace(
-                                "[FEEDBACK COMPLETE] Type 'next' or click Next Question when you are ready to continue.",
-                                ""
-                            ).strip()
-                            st.markdown(display_response)
-                            add_message_to_history("assistant", response)
-                            if "Question" in response and "?" in response:
-                                increment_question_count()
-                            st.rerun()
+                with st.chat_message("assistant", avatar="🤖"):
+                    with st.spinner("🤖 Coach is thinking..."):
+                        response, error = run_chain(
+                            st.session_state.chain,
+                            user_input
+                        )
+                    if error:
+                        st.error(error)
+                    else:
+                        display_response = response.replace(
+                            "[FEEDBACK COMPLETE] Type 'next' or click Next Question when you are ready to continue.",
+                            ""
+                        ).replace("[SESSION ENDED]", "").strip()
+                        st.markdown(display_response)
+                        add_message_to_history("assistant", response)
+                        # After every answer → always show Next Question button
+                        st.session_state.awaiting_next_question = True
+                        st.rerun()
