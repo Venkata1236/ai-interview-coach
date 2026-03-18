@@ -1,10 +1,10 @@
-import os
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import PromptTemplate
-from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.messages import HumanMessage
 from memory.memory_manager import get_memory
 from prompts.interview_prompt import get_interview_prompt
 from dotenv import load_dotenv
+import os
 
 load_dotenv()
 
