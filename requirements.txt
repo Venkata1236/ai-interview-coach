@@ -1,8 +1,9 @@
 langchain
 langchain-openai
+langchain-community
+langchain-core
 openai
 python-dotenv
 streamlit
 pypdf2
 python-docx
-
