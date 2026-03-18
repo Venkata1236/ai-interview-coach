@@ -1,6 +1,7 @@
 langchain==0.0.350
 openai==0.28.1
-python-dotenv
-streamlit
-pypdf2
-python-docx
+python-dotenv==1.0.1
+streamlit==1.32.0
+PyPDF2==3.0.1
+python-docx==1.1.2
+pydantic==1.10.15
