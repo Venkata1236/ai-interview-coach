@@ -1,3 +1,4 @@
+from langchain_community.chat_message_histories import ChatMessageHistory
 from langchain.memory import ConversationBufferMemory
 
 def get_memory():
